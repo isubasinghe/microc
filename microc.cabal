@@ -27,6 +27,7 @@ library
   exposed-modules:
       AST
       Lib
+      MicroParser
   other-modules:
       Paths_microc
   hs-source-dirs:
