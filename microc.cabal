@@ -33,7 +33,9 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , megaparsec ==9.2.0
     , text ==1.2.4.1
+    , void ==0.7.3
   default-language: Haskell2010
 
 executable microc-exe
@@ -45,8 +47,10 @@ executable microc-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , megaparsec ==9.2.0
     , microc
     , text ==1.2.4.1
+    , void ==0.7.3
   default-language: Haskell2010
 
 test-suite microc-test
@@ -59,6 +63,8 @@ test-suite microc-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , megaparsec ==9.2.0
     , microc
     , text ==1.2.4.1
+    , void ==0.7.3
   default-language: Haskell2010
