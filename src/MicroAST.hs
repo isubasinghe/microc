@@ -41,26 +41,43 @@ data Expr
   | Access Expr Expr
   | Deref Expr
   | Addr Expr
-  | Assign Expr
-  | Sizeof Expr
+  | Assign Expr Expr
+  | Sizeof Type
   | Noexpr
   deriving (Show, Eq)
 
 data Statement
-  = Block [Statement]
+  = Expr Expr 
+  | Block [Statement]
   | Return Expr
   | If Expr Statement Statement
   | For Expr Expr Expr Statement
   | While Expr Statement
   deriving (Show, Eq)
 
-data Type 
-  = Pointer Type 
-  | TyInt 
+data Type
+  = Pointer Type
+  | TyInt
   | TyBool
-  | TyChar 
-  | TyFloat 
-  | TyVoid 
-  | TyStruct Text 
-  deriving(Show, Eq)
+  | TyChar
+  | TyFloat
+  | TyVoid
+  | TyStruct Text
+  deriving (Show, Eq)
 
+data Bind = Bind {bindType :: Type, bindName :: Text}
+  deriving (Show, Eq)
+
+data Struct = Struct {structName :: Text, structFields :: [Bind]}
+  deriving (Show, Eq)
+
+data Function = Function 
+  { ty :: Type 
+  , name :: Text 
+  , formals :: [Bind]
+  , locals :: [Bind]
+  , body :: [Statement]}
+  deriving (Show, Eq)
+
+data Program = Program [Struct] [Bind] [Function]
+  deriving (Show, Eq)
