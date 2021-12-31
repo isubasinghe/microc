@@ -67,4 +67,39 @@ packages:
       sha256: f889d6903383305688e6e703982bfdc985649b7d4538429e44f98f99d8f73c07
   original:
     hackage: base-orphans-0.8.6@sha256:eb6758d0160d607e0c45dbd6b196f515b9a589fd4f6d2f926929dd5d56282d37,3175
+- completed:
+    hackage: optparse-applicative-0.16.1.0@sha256:418c22ed6a19124d457d96bc66bd22c93ac22fad0c7100fe4972bbb4ac989731,4982
+    pantry-tree:
+      size: 2979
+      sha256: dd092d843091c08691485d68a1908517079b1bc6f3d73928f37635a19dc27fc1
+  original:
+    hackage: optparse-applicative-0.16.1.0@sha256:418c22ed6a19124d457d96bc66bd22c93ac22fad0c7100fe4972bbb4ac989731,4982
+- completed:
+    hackage: ansi-wl-pprint-0.6.9@sha256:212144ea0623b1170807a4162db05d87f26cf10b334aeadd0edb377aba06a1ce,2425
+    pantry-tree:
+      size: 472
+      sha256: 0a2390ba39c3b84f68e382cb25b58cea66d61a89dab818bb5e2a6c12642e2e21
+  original:
+    hackage: ansi-wl-pprint-0.6.9@sha256:212144ea0623b1170807a4162db05d87f26cf10b334aeadd0edb377aba06a1ce,2425
+- completed:
+    hackage: transformers-compat-0.7.1@sha256:03534fcfd4a6026d415b0e19d2a48d6ccb639e809db0cd41f313bc771a887a9b,5602
+    pantry-tree:
+      size: 1724
+      sha256: 62a237717ebb6337a8ca3b446a1fa3075fd0e5136384e00760f702064eda9c0f
+  original:
+    hackage: transformers-compat-0.7.1@sha256:03534fcfd4a6026d415b0e19d2a48d6ccb639e809db0cd41f313bc771a887a9b,5602
+- completed:
+    hackage: ansi-terminal-0.11.1@sha256:e8428fcd5fe9d4e8a796a0c8107b7288a0a93ffaa8d761cf51f803384284bd77,3321
+    pantry-tree:
+      size: 1461
+      sha256: 766e3636d5d638f5c451b7384ca08907622ac7ecae643df75497b53f09c97ac2
+  original:
+    hackage: ansi-terminal-0.11.1@sha256:e8428fcd5fe9d4e8a796a0c8107b7288a0a93ffaa8d761cf51f803384284bd77,3321
+- completed:
+    hackage: colour-2.3.6@sha256:ebdcbf15023958838a527e381ab3c3b1e99ed12d1b25efeb7feaa4ad8c37664a,2378
+    pantry-tree:
+      size: 1183
+      sha256: 03f8e22f364deb86098dbfbe0bf83c896437b2355f139abdac0402658fb6ac7e
+  original:
+    hackage: colour-2.3.6@sha256:ebdcbf15023958838a527e381ab3c3b1e99ed12d1b25efeb7feaa4ad8c37664a,2378
 snapshots: []

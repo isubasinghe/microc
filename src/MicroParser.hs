@@ -211,3 +211,5 @@ programP = between sc eof $ do
   let structs = lefts structsOrGlobals
       globals = rights structsOrGlobals
   Program structs globals <$> many fdeclP
+
+
