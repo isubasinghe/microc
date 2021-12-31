@@ -28,6 +28,7 @@ dependencies:
   - optparse-applicative ==0.16.1.0
   - containers ==0.6.5.1
   - mtl ==2.2.2
+  - relude ==1.0.0.1
 
 library:
   source-dirs: src

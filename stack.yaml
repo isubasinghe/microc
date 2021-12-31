@@ -54,6 +54,8 @@ extra-deps:
   - transformers-compat-0.7.1@sha256:03534fcfd4a6026d415b0e19d2a48d6ccb639e809db0cd41f313bc771a887a9b,5602
   - ansi-terminal-0.11.1@sha256:e8428fcd5fe9d4e8a796a0c8107b7288a0a93ffaa8d761cf51f803384284bd77,3321
   - colour-2.3.6@sha256:ebdcbf15023958838a527e381ab3c3b1e99ed12d1b25efeb7feaa4ad8c37664a,2378
+  - relude-1.0.0.1@sha256:35bcdaf14018e79f11e712b0e2314c1aac79976f28f4adc179985457493557d5,11569
+  - unordered-containers-0.2.16.0@sha256:859ec9a017e51194755cb8a445b767afc5ce0ac991cd50b0f96abd31b3687aab,5217
 
 allow-newer: true
 # Override default flag values for local packages and extra-deps

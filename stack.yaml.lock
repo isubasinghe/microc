@@ -102,4 +102,18 @@ packages:
       sha256: 03f8e22f364deb86098dbfbe0bf83c896437b2355f139abdac0402658fb6ac7e
   original:
     hackage: colour-2.3.6@sha256:ebdcbf15023958838a527e381ab3c3b1e99ed12d1b25efeb7feaa4ad8c37664a,2378
+- completed:
+    hackage: relude-1.0.0.1@sha256:35bcdaf14018e79f11e712b0e2314c1aac79976f28f4adc179985457493557d5,11569
+    pantry-tree:
+      size: 4282
+      sha256: ead687d39d06c841de36fc214402ad4389e8837284485cfe52d975f51b274e81
+  original:
+    hackage: relude-1.0.0.1@sha256:35bcdaf14018e79f11e712b0e2314c1aac79976f28f4adc179985457493557d5,11569
+- completed:
+    hackage: unordered-containers-0.2.16.0@sha256:859ec9a017e51194755cb8a445b767afc5ce0ac991cd50b0f96abd31b3687aab,5217
+    pantry-tree:
+      size: 1316
+      sha256: e8d877c3c7545bc3d0e5b990466572a39b19f440bbf7a0e1bdde7521176cd12a
+  original:
+    hackage: unordered-containers-0.2.16.0@sha256:859ec9a017e51194755cb8a445b767afc5ce0ac991cd50b0f96abd31b3687aab,5217
 snapshots: []
