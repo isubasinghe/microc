@@ -13,7 +13,7 @@ data SExpr'
   | SBoolLit Bool
   | SNull
   | SBinOp Op SExpr SExpr
-  | SUnOp SExpr
+  | SUnOp Uop SExpr
   | SCall Text [SExpr]
   | SCast Type SExpr
   | LVal LValue
