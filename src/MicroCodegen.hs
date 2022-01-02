@@ -79,6 +79,7 @@ ltypeOfTyp = \case
     fields <- getFields n
     typs <- mapM (ltypeOfTyp . bindType) fields
     pure $ AST.StructureType {AST.isPacked = True, AST.elementTypes = typs}
+
 sizeof :: MonadState Env m => Type -> m Word32 
 sizeof = \case 
   TyBool -> pure 1 
@@ -102,7 +103,25 @@ codegenLVal (SAccess e i) = do
   L.gep e' [zero, offset]
 
 codegenSexpr :: SExpr -> Codegen Operand 
-codegenSexpr = undefined
-
-
+codegenSexpr (TyInt, SLiteral i) = pure $ L.int32 (fromIntegral i)
+codegenSexpr (TyFloat, SFlit f) = pure $ L.double f 
+codegenSexpr (TyBool, SBoolLit b) = pure $ L.bit (if b then 1 else 0)
+codegenSexpr (TyChar, SCharLit c) = pure $ L.int8 (fromIntegral c)
+codegenSexpr (Pointer TyChar, SStrLit s) = do 
+  strs <- gets strings 
+  case M.lookup s strs of 
+    Nothing -> do 
+      let nm = mkName (show (M.size strs) <> ".str")
+      op <- L.globalStringPtr (cs s) nm 
+      modify $ \env -> env { strings = M.insert s (AST.ConstantOperand op) strs}
+      pure (AST.ConstantOperand op)
+    Just op -> pure op
+codegenSexpr (t, SNull) = L.inttoptr (L.int64 0) =<< ltypeOfTyp t
+codegenSexpr (TyInt, SSizeof t) = L.int32 . fromIntegral <$> sizeof t 
+codegenSexpr (_, SAddr e) = codegenLVal e 
+codegenSexpr (_, SAssign lhs rhs) = do
+  rhs' <- codegenSexpr rhs
+  lhs' <- codegenLVal lhs
+  L.store lhs' 0 rhs'
+  return rhs'
 
