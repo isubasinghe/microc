@@ -4,6 +4,7 @@
 
 module MicroSemant where
 
+import Control.Applicative
 import Control.Monad.Except
 import Control.Monad.State
 import Data.List (find, findIndex)
@@ -13,7 +14,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import MicroAST
 import MicroSAST
-
+import MicroAnalysis 
 type Vars = M.Map (Text, VarKind) Type
 
 type Funcs = M.Map Text Function
@@ -277,17 +278,52 @@ checkStatement func stmt = case stmt of
                                        _ -> nothingFollowsRet ss
 
 
-{- checkFunction :: Function -> Semant SFunction 
-checkFunction func = do 
-  funcs <- gets funcs 
-  unless (M.notMember (name funcs) funcs) $ throwError $ Redeclaration (name func)
-  modify $ \env -> env { funcs = M.insert (name func) func funcs}
-  (formals', locals', body') <- locally $ liftM3 
+locally :: MonadState s m => m a -> m a
+locally computation = do
+  oldState <- get
+  result   <- computation
+  put oldState
+  return result
+
+checkFunction :: Function -> Semant SFunction
+checkFunction func = do
+  -- add the fname to the table and check for conflicts
+  funcs <- gets funcs
+  unless (M.notMember (name func) funcs) $ throwError $
+    Redeclaration (name func)
+  -- add this func to symbol table
+  modify $ \env -> env { funcs = M.insert (name func) func funcs }
+
+  (formals', locals', body') <- locally $ liftM3
     (,,)
     (checkBinds Formal (F func) (formals func))
     (checkBinds Local (F func) (locals func))
     (checkStatement func (Block $ body func))
-  case body' of 
-    SBlock body'' -> do 
-      unless (ty func == TyVoid || validate genCFG body'')
-     -}
+  case body' of
+    SBlock body'' -> do
+      unless (ty func == TyVoid || validate (genCFG body''))
+        $ throwError (TypeError [ty func] TyVoid (Block $ body func))
+
+      pure $ SFunction { sty     = ty func
+                       , sname    = name func
+                       , sformals = formals'
+                       , slocals  = locals'
+                       , sbody    = SBlock body''
+                       }
+    _ -> error "Internal error - block didn't become a block?"
+
+checkProgram :: Program -> Either SemantError SProgram
+checkProgram program =
+  evalState (runExceptT (checkProgram' program)) baseEnv
+ where
+  baseEnv = Env { structs = [], vars = M.empty, funcs = builtIns }
+
+  checkProgram' :: Program -> Semant SProgram
+  checkProgram' (Program structs binds funcs) = do
+    structs' <- mapM checkFields structs
+    modify $ \e -> e { structs = structs' }
+    globals <- checkBinds Global TopLevel binds
+    funcs'  <- mapM checkFunction funcs
+    case find (\f -> sname f == "main") funcs' of
+      Nothing -> throwError NoMain
+      Just _  -> pure (structs', globals, funcs')
