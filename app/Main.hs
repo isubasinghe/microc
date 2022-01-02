@@ -5,6 +5,7 @@ import qualified Options.Applicative as OP
 import qualified MicroAST as A
 import qualified MicroParser as P 
 import qualified Data.Text.IO as TIO
+import qualified MicroSemant as MS 
 import qualified CLI as C
 import Text.Megaparsec (runParser, errorBundlePretty)
 import MicroParser (programP)
@@ -18,7 +19,11 @@ main = runOpts =<< OP.execParser (C.optionsP `withInfo` infoString)
 
 
 processAction :: C.Action -> A.Program -> IO ()
-processAction act ast = print ast
+processAction act ast = case act of 
+                          C.Ast -> print ast 
+                          _ -> case MS.checkProgram ast of 
+                                 Left err -> print err 
+                                 Right sast -> print sast
 
 runOpts :: C.Options -> IO ()
 runOpts (C.Options action infile) = do 

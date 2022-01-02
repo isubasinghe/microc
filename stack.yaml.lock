@@ -116,4 +116,39 @@ packages:
       sha256: e8d877c3c7545bc3d0e5b990466572a39b19f440bbf7a0e1bdde7521176cd12a
   original:
     hackage: unordered-containers-0.2.16.0@sha256:859ec9a017e51194755cb8a445b767afc5ce0ac991cd50b0f96abd31b3687aab,5217
+- completed:
+    hackage: llvm-hs-pure-9.0.0@sha256:134779f40086a366279f678e670b610d7a7618b28dd43f65894078fd20e04629,2945
+    pantry-tree:
+      size: 2600
+      sha256: f1a83aa959b69b72342997fc4fdc352086bc3b9f306cfb6a4c8bbc850d36b4fb
+  original:
+    hackage: llvm-hs-pure-9.0.0@sha256:134779f40086a366279f678e670b610d7a7618b28dd43f65894078fd20e04629,2945
+- completed:
+    hackage: attoparsec-0.14.3@sha256:b65d94fa4ac2854e396d29532915c5fd6c48d000fea8b84f3c0d9c8430e36dc4,6183
+    pantry-tree:
+      size: 5305
+      sha256: 0a15e87509cc67315b0531cac10baaaad5eef464c0bb5175d8ecbdcd7365e056
+  original:
+    hackage: attoparsec-0.14.3@sha256:b65d94fa4ac2854e396d29532915c5fd6c48d000fea8b84f3c0d9c8430e36dc4,6183
+- completed:
+    hackage: fail-4.9.0.0@sha256:35d1ee29364447c1b7d616bb1ee31f162b73e85fea91d7ca6441cf901398f572,1051
+    pantry-tree:
+      size: 210
+      sha256: e4daa79eb6a4442ec85c86dfeb0eb4bf8624f8dcc5291a2216165120ecb77c13
+  original:
+    hackage: fail-4.9.0.0@sha256:35d1ee29364447c1b7d616bb1ee31f162b73e85fea91d7ca6441cf901398f572,1051
+- completed:
+    hackage: string-conversions-0.4.0.1@sha256:9c4075e54aa6cabfe244e07e2a1de720f3e98a0a6980fc671ab9c0da30f0f259,1617
+    pantry-tree:
+      size: 442
+      sha256: eb5629dce6a5f06b6a80b63b8465023a5d5431c795588039e13f5f324af24e0a
+  original:
+    hackage: string-conversions-0.4.0.1@sha256:9c4075e54aa6cabfe244e07e2a1de720f3e98a0a6980fc671ab9c0da30f0f259,1617
+- completed:
+    hackage: utf8-string-1.0.2@sha256:79416292186feeaf1f60e49ac5a1ffae9bf1b120e040a74bf0e81ca7f1d31d3f,1538
+    pantry-tree:
+      size: 601
+      sha256: 0863c3c9b6ee24dd38873c62e38ac46dd50aff2ea6b362beadf7f9b4a273c75f
+  original:
+    hackage: utf8-string-1.0.2@sha256:79416292186feeaf1f60e49ac5a1ffae9bf1b120e040a74bf0e81ca7f1d31d3f,1538
 snapshots: []

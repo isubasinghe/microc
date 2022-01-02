@@ -56,6 +56,11 @@ extra-deps:
   - colour-2.3.6@sha256:ebdcbf15023958838a527e381ab3c3b1e99ed12d1b25efeb7feaa4ad8c37664a,2378
   - relude-1.0.0.1@sha256:35bcdaf14018e79f11e712b0e2314c1aac79976f28f4adc179985457493557d5,11569
   - unordered-containers-0.2.16.0@sha256:859ec9a017e51194755cb8a445b767afc5ce0ac991cd50b0f96abd31b3687aab,5217
+  - llvm-hs-pure-9.0.0@sha256:134779f40086a366279f678e670b610d7a7618b28dd43f65894078fd20e04629,2945
+  - attoparsec-0.14.3@sha256:b65d94fa4ac2854e396d29532915c5fd6c48d000fea8b84f3c0d9c8430e36dc4,6183
+  - fail-4.9.0.0@sha256:35d1ee29364447c1b7d616bb1ee31f162b73e85fea91d7ca6441cf901398f572,1051
+  - string-conversions-0.4.0.1@sha256:9c4075e54aa6cabfe244e07e2a1de720f3e98a0a6980fc671ab9c0da30f0f259,1617
+  - utf8-string-1.0.2@sha256:79416292186feeaf1f60e49ac5a1ffae9bf1b120e040a74bf0e81ca7f1d31d3f,1538
 
 allow-newer: true
 # Override default flag values for local packages and extra-deps
