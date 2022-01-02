@@ -57,6 +57,7 @@ data SemantError
   = IllegalBinding Name BindingKind VarKind BindingLoc
   | UndefinedSymbol Name SymbolKind Expr
   | TypeError {expected :: [Type], got :: Type, errorLoc :: Statement}
+  | CastError {to :: Type, from :: Type, castLoc :: Statement}
   | ArgError {nExpected :: Int, nGot :: Int, callSite :: Expr}
   | Redeclaration Name
   | NoMain
@@ -72,4 +73,3 @@ data SymbolKind = Var | Func deriving (Show, Eq)
 
 data VarKind = Global | Formal | Local | StructField
   deriving (Show, Eq, Ord)
-
