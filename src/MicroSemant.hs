@@ -33,12 +33,12 @@ checkBinds :: VarKind -> BindingLoc -> [Bind] -> Semant [Bind]
 checkBinds kind loc binds = do
   forM binds $ \case
     Bind TyVoid name -> throwError $ IllegalBinding name Void kind loc
-    Bind ty name -> do
+    Bind ty' name -> do
       vars <- gets vars
       when (M.member (name, kind) vars) $
         throwError (IllegalBinding name Duplicate kind loc)
-      modify $ \env -> env {vars = M.insert (name, kind) ty vars}
-      pure $ Bind ty name
+      modify $ \env -> env {vars = M.insert (name, kind) ty' vars}
+      pure $ Bind ty' name
 
 checkFields :: Struct -> Semant Struct
 checkFields s@(Struct name fields) = do
@@ -91,7 +91,7 @@ checkExpr expr = case expr of
             [Local, Formal, Global]
     case join $ find isJust foundVars of
       Nothing -> throwError $ UndefinedSymbol s Var expr
-      Just ty -> pure (ty, LVal $ SId s)
+      Just ty' -> pure (ty', LVal $ SId s)
   BinOp op lhs rhs -> do
     lhs'@(t1, _) <- checkExpr lhs
     rhs'@(t2, _) <- checkExpr rhs
@@ -151,27 +151,27 @@ checkExpr expr = case expr of
             throwError (TypeError [TyInt, TyFloat] t1 (Expr expr))
           pure (TyBool, SBinOp op lhs' rhs')
   Unop op e -> do
-    e'@(ty, _) <- checkExpr e
+    e'@(ty', _) <- checkExpr e
     case op of
       Neg -> do
-        unless (isNumeric ty) $
-          throwError $ TypeError [TyInt, TyFloat] ty (Expr expr)
-        pure (ty, SUnOp Neg e')
+        unless (isNumeric ty') $
+          throwError $ TypeError [TyInt, TyFloat] ty' (Expr expr)
+        pure (ty', SUnOp Neg e')
       Not -> do
-        unless (ty == TyBool) $
+        unless (ty' == TyBool) $
           throwError $
-            TypeError [TyBool] ty (Expr expr)
-        pure (ty, SUnOp Not e')
+            TypeError [TyBool] ty' (Expr expr)
+        pure (ty', SUnOp Not e')
   Addr e -> do
-    (t, e') <- checkExpr e 
-    case e' of 
+    (t, e') <- checkExpr e
+    case e' of
       LVal l -> pure (Pointer t, SAddr l)
-      _ -> throwError $ AddressError e 
+      _ -> throwError $ AddressError e
   Deref e -> do
-    (ty, e') <- checkExpr e
-    case ty of 
-      Pointer t -> pure (t, LVal $ SDeref (ty, e'))
-      _ -> throwError $ TypeError [Pointer TyVoid, Pointer TyInt, Pointer TyFloat] ty (Expr expr)
+    (ty', e') <- checkExpr e
+    case ty' of
+      Pointer t -> pure (t, LVal $ SDeref (ty', e'))
+      _ -> throwError $ TypeError [Pointer TyVoid, Pointer TyInt, Pointer TyFloat] ty' (Expr expr)
   Call "printf" es -> do
     es' <- mapM checkExpr es
     let (formatStr, _) = head es'
@@ -179,16 +179,115 @@ checkExpr expr = case expr of
       throwError $ TypeError [Pointer TyChar] formatStr (Expr expr)
     pure (TyVoid, SCall "printf" es')
   Call s es -> do
-    funcs <- gets funcs 
-    case M.lookup s funcs of 
-      Nothing -> throwError $ UndefinedSymbol $ Func expr 
-      Just f -> do 
-        es' <- mapM checkExpr es 
+    funcs <- gets funcs
+    case M.lookup s funcs of
+      Nothing -> throwError $ UndefinedSymbol s Func expr
+      Just f -> do
+        es' <- mapM checkExpr es
         let nFormals = length (formals f)
-            nActuals = length es 
-        unless (nFormals == nActuals) $ throwError $ ArgError nFormals nActuals expr 
+            nActuals = length es
+        unless (nFormals == nActuals) $ throwError $ ArgError nFormals nActuals expr
+
+        forM_ (zip (map fst es') (map bindType (formals f))) $
+          \(callSite, defSite) ->
+            unless (callSite == defSite) $ throwError $ TypeError {expected = [defSite], got = callSite, errorLoc = Expr expr}
+        pure (ty f, SCall s es')
   Cast t' e -> do
-    undefined
+    e'@(t, _) <- checkExpr e
+    case (t', t) of
+      (Pointer _, Pointer _) -> pure (t', SCast t' e')
+      (Pointer _, TyInt) -> pure (t', SCast t' e')
+      (TyInt, Pointer _) -> pure (t', SCast t' e')
+      (TyFloat, TyInt) -> pure (t', SCast t' e')
+      _ -> throwError $ CastError t' t (Expr expr)
   Access e field -> do
-    undefined
-  _ -> undefined
+    fieldName <- case field of
+      Id f -> pure f
+      _ -> throwError (AccessError field e)
+    (t, e') <- checkExpr e
+    lval <- case e' of
+      LVal l' -> pure l'
+      _ -> throwError $ AccessError e field
+    (Struct _ fields) <- case t of
+      TyStruct name' -> do
+        ss <- gets structs
+        case find (\(Struct n _) -> n == name') ss of
+          Nothing -> throwError $ TypeError [TyStruct "a_struct"] t (Expr expr)
+          Just s -> pure s
+      _ -> undefined
+    f <- case findIndex (\(Bind _ f) -> f == fieldName) fields of
+      Nothing -> throwError $ AccessError e field
+      Just i -> pure i
+    pure (bindType (fields !! f), LVal $ SAccess lval f)
+  Assign lhs rhs -> do
+    lhs'@(t1, _) <- checkExpr lhs
+    rhs'@(t2, _) <- checkExpr rhs
+    lval <- case snd lhs' of
+      LVal e -> pure e
+      _ -> throwError $ AssignmentError lhs rhs
+    case snd rhs' of
+      SNull -> checkExpr (Assign lhs (Cast t1 rhs))
+      _ -> do
+        unless (t1 == t2) $ throwError $ TypeError [t1] t2 (Expr expr)
+        pure (t2, SAssign lval rhs')
+
+checkStatement :: Function -> Statement -> Semant SStatement
+checkStatement func stmt = case stmt of
+  Expr e -> SExpr <$> checkExpr e
+  If pred cons alt -> do
+    pred'@(ty', _) <- checkExpr pred
+    unless (ty' == TyBool) $ throwError $ TypeError [TyBool] ty' stmt
+    SIf pred' <$> checkStatement func cons <*> checkStatement func alt
+  While cond action -> do
+    cond'@(ty', _) <- checkExpr cond
+    unless (ty' == TyBool) $ throwError $ TypeError [TyBool] ty' stmt
+    action' <- checkStatement func action
+    pure $ SIf cond' (SDoWhile cond' action') (SBlock [])
+  For init cond inc action -> do
+    cond'@(ty', _) <- checkExpr cond
+    unless (ty' == TyBool) $ throwError $ TypeError [TyBool] ty' stmt
+    init' <- checkExpr init
+    inc' <- checkExpr inc
+    action' <- checkStatement func action
+    pure $
+      SBlock
+        [ SExpr init',
+          SIf
+            cond'
+            (SDoWhile cond' (SBlock [action', SExpr inc']))
+            (SBlock [])
+        ]
+  Return expr -> do
+    e@(ty', _) <- checkExpr expr
+    unless (ty' == ty func) $ throwError $ TypeError [ty func] ty' stmt
+    pure $ SReturn e
+  Block sl -> do
+    let flattened = flatten sl 
+    unless (nothingFollowsRet flattened) $ throwError $ DeadCode stmt 
+    SBlock <$> mapM (checkStatement func) flattened 
+      where 
+        flatten [] = []
+        flatten (Block s: ss) = flatten (s ++ ss)
+        flatten (s : ss) = s: flatten ss 
+        
+        nothingFollowsRet [] = True 
+        nothingFollowsRet [Return _] = True
+        nothingFollowsRet (s : ss) = case s of 
+                                       Return _ -> False 
+                                       _ -> nothingFollowsRet ss
+
+
+{- checkFunction :: Function -> Semant SFunction 
+checkFunction func = do 
+  funcs <- gets funcs 
+  unless (M.notMember (name funcs) funcs) $ throwError $ Redeclaration (name func)
+  modify $ \env -> env { funcs = M.insert (name func) func funcs}
+  (formals', locals', body') <- locally $ liftM3 
+    (,,)
+    (checkBinds Formal (F func) (formals func))
+    (checkBinds Local (F func) (locals func))
+    (checkStatement func (Block $ body func))
+  case body' of 
+    SBlock body'' -> do 
+      unless (ty func == TyVoid || validate genCFG body'')
+     -}
