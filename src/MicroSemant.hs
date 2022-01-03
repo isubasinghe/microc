@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import MicroAST
 import MicroSAST
 import MicroAnalysis 
+import MicroUtils
 type Vars = M.Map (Text, VarKind) Type
 
 type Funcs = M.Map Text Function
@@ -278,12 +279,6 @@ checkStatement func stmt = case stmt of
                                        _ -> nothingFollowsRet ss
 
 
-locally :: MonadState s m => m a -> m a
-locally computation = do
-  oldState <- get
-  result   <- computation
-  put oldState
-  return result
 
 checkFunction :: Function -> Semant SFunction
 checkFunction func = do
