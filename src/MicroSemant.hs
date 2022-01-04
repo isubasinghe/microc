@@ -13,9 +13,10 @@ import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import MicroAST
+import MicroAnalysis
 import MicroSAST
-import MicroAnalysis 
 import MicroUtils
+
 type Vars = M.Map (Text, VarKind) Type
 
 type Funcs = M.Map Text Function
@@ -264,61 +265,64 @@ checkStatement func stmt = case stmt of
     unless (ty' == ty func) $ throwError $ TypeError [ty func] ty' stmt
     pure $ SReturn e
   Block sl -> do
-    let flattened = flatten sl 
-    unless (nothingFollowsRet flattened) $ throwError $ DeadCode stmt 
-    SBlock <$> mapM (checkStatement func) flattened 
-      where 
-        flatten [] = []
-        flatten (Block s: ss) = flatten (s ++ ss)
-        flatten (s : ss) = s: flatten ss 
-        
-        nothingFollowsRet [] = True 
-        nothingFollowsRet [Return _] = True
-        nothingFollowsRet (s : ss) = case s of 
-                                       Return _ -> False 
-                                       _ -> nothingFollowsRet ss
+    let flattened = flatten sl
+    unless (nothingFollowsRet flattened) $ throwError $ DeadCode stmt
+    SBlock <$> mapM (checkStatement func) flattened
+    where
+      flatten [] = []
+      flatten (Block s : ss) = flatten (s ++ ss)
+      flatten (s : ss) = s : flatten ss
 
-
+      nothingFollowsRet [] = True
+      nothingFollowsRet [Return _] = True
+      nothingFollowsRet (s : ss) = case s of
+        Return _ -> False
+        _ -> nothingFollowsRet ss
 
 checkFunction :: Function -> Semant SFunction
 checkFunction func = do
   -- add the fname to the table and check for conflicts
   funcs <- gets funcs
-  unless (M.notMember (name func) funcs) $ throwError $
-    Redeclaration (name func)
+  unless (M.notMember (name func) funcs) $
+    throwError $
+      Redeclaration (name func)
   -- add this func to symbol table
-  modify $ \env -> env { funcs = M.insert (name func) func funcs }
+  modify $ \env -> env {funcs = M.insert (name func) func funcs}
 
-  (formals', locals', body') <- locally $ liftM3
-    (,,)
-    (checkBinds Formal (F func) (formals func))
-    (checkBinds Local (F func) (locals func))
-    (checkStatement func (Block $ body func))
+  (formals', locals', body') <-
+    locally $
+      liftM3
+        (,,)
+        (checkBinds Formal (F func) (formals func))
+        (checkBinds Local (F func) (locals func))
+        (checkStatement func (Block $ body func))
   case body' of
     SBlock body'' -> do
-      unless (ty func == TyVoid || validate (genCFG body''))
-        $ throwError (TypeError [ty func] TyVoid (Block $ body func))
+      unless (ty func == TyVoid || validate (genCFG body'')) $
+        throwError (TypeError [ty func] TyVoid (Block $ body func))
 
-      pure $ SFunction { sty     = ty func
-                       , sname    = name func
-                       , sformals = formals'
-                       , slocals  = locals'
-                       , sbody    = SBlock body''
-                       }
+      pure $
+        SFunction
+          { sty = ty func,
+            sname = name func,
+            sformals = formals',
+            slocals = locals',
+            sbody = SBlock body''
+          }
     _ -> error "Internal error - block didn't become a block?"
 
 checkProgram :: Program -> Either SemantError SProgram
 checkProgram program =
   evalState (runExceptT (checkProgram' program)) baseEnv
- where
-  baseEnv = Env { structs = [], vars = M.empty, funcs = builtIns }
+  where
+    baseEnv = Env {structs = [], vars = M.empty, funcs = builtIns}
 
-  checkProgram' :: Program -> Semant SProgram
-  checkProgram' (Program structs binds funcs) = do
-    structs' <- mapM checkFields structs
-    modify $ \e -> e { structs = structs' }
-    globals <- checkBinds Global TopLevel binds
-    funcs'  <- mapM checkFunction funcs
-    case find (\f -> sname f == "main") funcs' of
-      Nothing -> throwError NoMain
-      Just _  -> pure (structs', globals, funcs')
+    checkProgram' :: Program -> Semant SProgram
+    checkProgram' (Program structs binds funcs) = do
+      structs' <- mapM checkFields structs
+      modify $ \e -> e {structs = structs'}
+      globals <- checkBinds Global TopLevel binds
+      funcs' <- mapM checkFunction funcs
+      case find (\f -> sname f == "start") funcs' of
+        Nothing -> throwError NoMain
+        Just _ -> pure (structs', globals, funcs')

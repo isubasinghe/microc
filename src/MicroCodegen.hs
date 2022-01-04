@@ -22,13 +22,13 @@ import qualified LLVM.AST.FloatingPointPredicate as FP
 import qualified LLVM.AST.IntegerPredicate as IP
 import LLVM.AST.Name
 import qualified LLVM.AST.Type as AST
+import LLVM.AST.Typed (typeOf)
 import qualified LLVM.AST.Typed (typeOf)
 import qualified LLVM.IRBuilder.Constant as L
 import qualified LLVM.IRBuilder.Instruction as L
 import qualified LLVM.IRBuilder.Module as L
 import qualified LLVM.IRBuilder.Monad as L
 import LLVM.Prelude (ShortByteString)
-import LLVM.AST.Typed (typeOf)
 import MicroAST
   ( Bind (..),
     Op (..),
@@ -38,6 +38,7 @@ import MicroAST
   )
 import MicroSAST
 import MicroUtils
+
 data Env = Env
   { operands :: M.Map Text Operand,
     structs :: [Struct],
@@ -241,6 +242,7 @@ codegenSexpr (_, SCast t' e@(t, _)) = do
     (TyFloat, TyInt) -> L.sitofp e' llvmType
     _ -> error "Internal error - semant failed"
 codegenSexpr (_, SNoexpr) = pure $ L.int32 0
+codegenSexpr (_, LVal val) = flip L.load 0 =<< codegenLVal val
 codegenSexpr sx =
   error $ "Internal error - semant failed. Invalid sexpr " <> show sx
 
@@ -264,7 +266,6 @@ codegenStatement (SIf p cons alt) = mdo
 
   mergeBlock <- L.block `L.named` "merge"
   return ()
-
 codegenStatement (SDoWhile p body) = mdo
   L.br whileBlock
   whileBlock <- L.block `L.named` "while_body"
@@ -280,27 +281,27 @@ codegenFunc f = mdo
   registerOperand (sname f) function
   (function, strs) <- locally $ do
     retty <- ltypeOfTyp (sty f)
-    params  <- mapM mkParam (sformals f)
+    params <- mapM mkParam (sformals f)
     fun <- L.function name params retty genBody
     strings' <- gets strings
     pure (fun, strings')
-  modify $ \e -> e { strings = strs }
-    where 
-      name = mkName (cs $ sname f)
-      mkParam (Bind t n) = (,) <$> ltypeOfTyp t <*> pure (L.ParameterName (cs n))
-      genBody :: [Operand] -> Codegen ()
-      genBody ops = do
-        _entry <- L.block `L.named` "entry"
-        forM_ (zip ops (sformals f)) $ \(op, Bind _ n) -> do
-          -- typeOf is defined in LLVM.AST.Typed
-          addr <- L.alloca (typeOf op) Nothing 0
-          L.store addr 0 op
-          registerOperand n addr
-        forM_ (slocals f) $ \(Bind t n) -> do
-          ltype <- ltypeOfTyp t
-          addr  <- L.alloca ltype Nothing 0
-          registerOperand n addr
-        codegenStatement (sbody f)
+  modify $ \e -> e {strings = strs}
+  where
+    name = mkName (cs $ sname f)
+    mkParam (Bind t n) = (,) <$> ltypeOfTyp t <*> pure (L.ParameterName (cs n))
+    genBody :: [Operand] -> Codegen ()
+    genBody ops = do
+      _entry <- L.block `L.named` "entry"
+      forM_ (zip ops (sformals f)) $ \(op, Bind _ n) -> do
+        -- typeOf is defined in LLVM.AST.Typed
+        addr <- L.alloca (typeOf op) Nothing 0
+        L.store addr 0 op
+        registerOperand n addr
+      forM_ (slocals f) $ \(Bind t n) -> do
+        ltype <- ltypeOfTyp t
+        addr <- L.alloca ltype Nothing 0
+        registerOperand n addr
+      codegenStatement (sbody f)
 
 emitBuiltIn :: (String, [AST.Type], AST.Type) -> LLVM ()
 emitBuiltIn (name, argtys, retty) = do
@@ -310,16 +311,17 @@ emitBuiltIn (name, argtys, retty) = do
 -- Printf has varargs so we treat it separately
 builtIns :: [(String, [AST.Type], AST.Type)]
 builtIns =
-  [ ("printbig"     , [AST.i32]               , AST.void)
-  , ("llvm.pow.f64" , [AST.double, AST.double], AST.double)
-  , ("llvm.powi.i32", [AST.double, AST.i32]   , AST.double)
-  , ("malloc"       , [AST.i32]               , AST.ptr AST.i8)
-  , ("free"         , [AST.ptr AST.i8]        , AST.void)
+  [ ("printbig", [AST.i32], AST.void),
+    ("llvm.pow.f64", [AST.double, AST.double], AST.double),
+    ("llvm.powi.i32", [AST.double, AST.i32], AST.double),
+    ("malloc", [AST.i32], AST.ptr AST.i8),
+    ("free", [AST.ptr AST.i8], AST.void),
+    ("get_arg", [AST.ptr AST.i8], AST.ptr AST.i8)
   ]
 
 codegenGlobal :: Bind -> LLVM ()
 codegenGlobal (Bind t n) = do
-  let name    = mkName $ cs n
+  let name = mkName $ cs n
       initVal = C.Int 0 0
   typ <- ltypeOfTyp t
   var <- L.global name typ initVal
@@ -330,20 +332,19 @@ emitTypeDef (Struct name _) = do
   typ <- ltypeOfTyp (TyStruct name)
   L.typedef (mkName (cs ("struct." <> name))) (Just typ)
 
-
 codegenProgram :: SProgram -> AST.Module
 codegenProgram (structs, globals, funcs) =
-  flip evalState (Env { operands = M.empty, structs = structs, strings = M.empty })
-    $ L.buildModuleT "microc"
-    $ do
+  flip evalState (Env {operands = M.empty, structs = structs, strings = M.empty}) $
+    L.buildModuleT "microc" $
+      do
         printf <- L.externVarArgs (mkName "printf") [charStar] AST.i32
         registerOperand "printf" printf
         mapM_ emitBuiltIn builtIns
-        mapM_ emitTypeDef   structs
+        mapM_ emitTypeDef structs
         mapM_ codegenGlobal globals
-        mapM_ codegenFunc   funcs
+        mapM_ codegenFunc funcs
 
 mkTerminator :: Codegen () -> Codegen ()
 mkTerminator instr = do
- check <- L.hasTerminator
- unless check instr
+  check <- L.hasTerminator
+  unless check instr

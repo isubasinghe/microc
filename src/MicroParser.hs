@@ -48,7 +48,7 @@ comma :: Parser ()
 comma = void $ symbol ","
 
 star :: Parser ()
-star = void $ symbol "$"
+star = void $ symbol "*"
 
 rword :: Text -> Parser ()
 rword w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)

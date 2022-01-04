@@ -14,6 +14,7 @@ import qualified Options.Applicative as OP
 import LLVM.Pretty (ppllvm)
 import Text.Megaparsec (errorBundlePretty, runParser)
 import Data.String.Conversions (cs)
+import Text.Pretty.Simple (pPrint)
 
 main :: IO ()
 main = runOpts =<< OP.execParser (C.optionsP `withInfo` infoString)
@@ -23,15 +24,15 @@ main = runOpts =<< OP.execParser (C.optionsP `withInfo` infoString)
 
 processAction :: C.Action -> A.Program -> IO ()
 processAction act ast = case act of
-  C.Ast -> print ast
+  C.Ast -> pPrint ast
   _ -> case MS.checkProgram ast of
     Left err -> print err
     Right sast ->
       let llvm = CG.codegenProgram sast
        in case act of
-            C.Sast -> print sast
+            C.Sast -> pPrint sast
             C.LLVM -> TIO.putStrLn . cs . ppllvm $ llvm
-            C.Compile outfile -> undefined
+            C.Compile outfile -> TL.compile llvm outfile
             _ -> error $ show act 
 
 runOpts :: C.Options -> IO ()
